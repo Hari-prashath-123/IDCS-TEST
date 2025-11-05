@@ -1,24 +1,8 @@
+<!-- Old feedback form removed as requested -->
 {% extends 'base.html' %}
 {% load static %}
 
-{% block nav %}
-<li class="">
-    <a href="{% url 'dash' %}"><i class="menu-icon fa fa-laptop"></i>Dashboard </a>
-</li>
-<li class="">
-    <a href="{% url 'hod_od_view' %}"><i class="menu-icon fa fa-file"></i>OD's </a>
-</li>
-<li>
-    <a href="{% url 'hod_leave_view' %}"><i class="menu-icon fa fa-copy"></i>Leave's </a>
-</li>
-<li class="">
-    <a href="{% url 'hod_gatepass_view' %}"><i class="menu-icon ti ti-shift-right-alt"></i>Gatepass </a>
 
-</li>
-<li class="active">
-    <a href="{% url 'hod_feedback_view' %}"><i class="menu-icon ti ti-comments"></i>Feedback </a>
-</li>
-{% endblock %}
 {% block root %}
 
 <style>
@@ -139,7 +123,7 @@
                         {% for i in spf %}
                         <tr>
                             <td><a href="{{i.qr_code.url}}"><i class=" fa fa-qrcode flat-color-1 "></i></a></td>
-                            <td><small>Mr/Mrs</small> {{i.staff.name}}</td>
+                            <td><small>Mr/Mr/Mrs.</small> {{i.staff.name}}</td>
                             <td>{{i.get_cls.0.1}}</td>
                             <td>{{i.get_cls.1.1}}</td>
                             <td>

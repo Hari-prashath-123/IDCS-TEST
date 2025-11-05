@@ -24,7 +24,16 @@ urlpatterns = [
 
     path('admin/', admin.site.urls),
     path('', include("core.urls")),
+    path('resume/', include(('resumebuilder.urls', 'resumebuilder'), namespace='resumebuilder')),
+    path('pathpilot/', include('pathpilot.urls')),
+    path('feed360/', include('feed360.urls')),
+    path('ats/', include(('ATS.urls', 'ATS'), namespace='ATS')),
 ]
 
-urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
-urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+# During development only: let Django serve static and media files.
+# In production static files should be served by the webserver (nginx) or
+# by Whitenoise when collectstatic has been run. Serving here when
+# DEBUG=False can mask deployment issues.
+if settings.DEBUG:
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

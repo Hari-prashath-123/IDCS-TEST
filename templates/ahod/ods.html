@@ -1,0 +1,447 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block root %}
+<!-- Year filter section (like staff portal) -->
+<form method="get" class="form-inline mb-3">
+    <label for="year" class="mr-2"><b>Filter by Year:</b></label>
+    <select name="year" id="year" class="form-control mr-2">
+        <option value="">All Years</option>
+        <option value="1" {% if request.GET.year == '1' %}selected{% endif %}>1st Year</option>
+        <option value="2" {% if request.GET.year == '2' %}selected{% endif %}>2nd Year</option>
+        <option value="3" {% if request.GET.year == '3' %}selected{% endif %}>3rd Year</option>
+        <option value="4" {% if request.GET.year == '4' %}selected{% endif %}>4th Year</option>
+    </select>
+    <button type="submit" class="btn btn-primary">Filter</button>
+</form>
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"/>
+
+<style>
+    .od-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 16px;
+        background: #fff;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    .od-table-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 14px 16px;
+        background: #1976d2;
+        color: #fff;
+        font-weight: 600;
+        font-size: 1.25rem;
+        border-top-left-radius: 8px;
+        border-top-right-radius: 8px;
+    }
+    .od-table-header .header-title { margin: 0; }
+    hr.od-divider { margin: 0; border: 0; border-top: 2px solid #e0e0e0; }
+    .od-header,
+    .od-row {
+        display: grid;
+        grid-template-columns: 100px 1fr 120px 120px 140px 160px 220px;
+        align-items: center;
+        gap: 10px;
+        padding: 12px;
+        border-bottom: 1px solid #e0e0e0;
+    }
+    .od-header { background: #f1f1f1; color: #333; font-weight: 600; text-align: center; }
+    .od-row:nth-child(even) { background: #f9f9f9; }
+    .od-id { font-weight: 700; color: #1976d2; }
+    .badge { padding: 5px 10px; border-radius: 12px; font-weight: 600; color: #fff; font-size: 0.8rem; }
+    .badge-Approved { background: #4caf50; }
+    .badge-Pending { background: #ff9800; }
+    .badge-Rejected { background: #f44336; }
+    .badge-secondary { background: #9e9e9e; }
+    .od-actions { display: flex; flex-direction: column; gap: 6px; }
+    .od-actions input[type="file"] { display: none; }
+    .file-upload-label,
+    .btn-upload,
+    .btn-outline-primary {
+        padding: 6px 10px; border-radius: 6px; font-weight: 600; cursor: pointer; text-align: center; font-size: 0.85rem;
+    }
+    .file-upload-label { background: #1976d2; color: #fff; }
+    .file-upload-label:hover { background: #1565c0; }
+    .btn-upload { background: #4caf50; border: none; color: #fff; }
+    .btn-upload:hover { background: #388e3c; }
+    @media (max-width: 768px) {
+        .od-table { padding: 10px; }
+        .od-header, .od-row { grid-template-columns: 1fr; text-align: left; }
+        .od-header div { display: none; }
+        .od-row { border: 1px solid #e0e0e0; margin-bottom: 12px; border-radius: 8px; padding: 10px; background: #fff; }
+        .od-row > div { display: flex; justify-content: space-between; padding: 4px 0; }
+        .od-row > div::before { content: attr(data-label); font-weight: 600; color: #555; }
+    }
+</style>
+
+<!-- Mentees ODs -->
+<div class="od-table">
+    <div class="od-table-header" style="position:relative;display:flex;justify-content:space-between;align-items:center;">
+        <span class="header-title">Mentees OD's</span>
+    </div>
+    <hr class="od-divider">
+    <div class="od-header">
+        <div>ID</div>
+        <div>NAME</div>
+            <div>SUB</div>
+        <div>FROM - TO</div>
+        <div>SUBMITTED AT</div>
+        <div>STATUS</div>
+        <div>ACTION</div>
+    </div>
+    {% for i in mods %}
+        {% if not request.GET.year or i.user.year|stringformat:'s' == request.GET.year %}
+        <div class="od-row">
+            <div class="od-id" data-label="ID">#OD{{ i.id }}</div>
+            <div class="od-title" data-label="NAME" title="{{ i.user.name }}">{{ i.user.name }}</div>
+                <div data-label="SUB">{{ i.sub }}</div>
+            <div data-label="FROM-TO">{{ i.start }}<br>{{ i.end }}</div>
+               <div data-label="Submitted At">{{ i.created|date:"d M Y, h:i A" }}</div>
+            <div data-label="STATUS">
+                <div class="status-grid">
+                    <div class="status-label">Mentor:</div>
+                    <span class="badge badge-{{ i.Mstatus }}">{{ i.Mstatus }}</span>
+                    <div class="status-label">Advisor:</div>
+                    <span class="badge badge-{{ i.Astatus }}">{{ i.Astatus }}</span>
+                    <div class="status-label">AHOD:</div>
+                    <span class="badge badge-{{ i.AHstatus }}">{{ i.AHstatus }}</span>
+                    <div class="status-label">HOD:</div>
+                    <span class="badge badge-{{ i.Hstatus }}">{{ i.Hstatus }}</span>
+                </div>
+            </div>
+            <div class="od-actions" data-label="ACTION">
+                    <button type="button" class="file-upload-label" data-toggle="modal" data-target="#detail{{i.id}}"><small>VIEW</small></button>
+                    {% if i.certificate %}
+                    <button type="button" class="btn-upload" data-toggle="modal" data-target="#certModal{{i.id}}">View Certificate</button>
+                    {% endif %}
+                {% if duser and i.user.mentor and duser.id == i.user.mentor.id and i.Mstatus == 'Pending' %}
+                    <form action="{% url 'ahod_action_od' i.id %}" method="POST" style="display:inline;">
+                        {% csrf_token %}
+                        <input type="hidden" name="role" value="mentor">
+                        <input type="hidden" name="sts" value="Approved">
+                        <button type="submit" class="btn btn-success btn-sm">Approve</button>
+                    </form>
+                    <form action="{% url 'ahod_action_od' i.id %}" method="POST" style="display:inline; margin-left:4px;">
+                        {% csrf_token %}
+                        <input type="hidden" name="role" value="mentor">
+                        <input type="hidden" name="sts" value="Rejected">
+                        <button type="submit" class="btn btn-danger btn-sm">Reject</button>
+                    </form>
+                {% elif duser and i.user.advisor and duser.id == i.user.advisor.id and i.Astatus == 'Pending' %}
+                    <form action="{% url 'ahod_action_od' i.id %}" method="POST" style="display:inline;">
+                        {% csrf_token %}
+                        <input type="hidden" name="role" value="advisor">
+                        <input type="hidden" name="sts" value="Approved">
+                        <button type="submit" class="btn btn-success btn-sm">Approve</button>
+                    </form>
+                    <form action="{% url 'ahod_action_od' i.id %}" method="POST" style="display:inline; margin-left:4px;">
+                        {% csrf_token %}
+                        <input type="hidden" name="role" value="advisor">
+                        <input type="hidden" name="sts" value="Rejected">
+                        <button type="submit" class="btn btn-danger btn-sm">Reject</button>
+                    </form>
+                {% elif duser and duser.position2 == 1 and i.AHstatus == 'Pending' %}
+                    <form action="{% url 'ahod_action_od' i.id %}" method="POST" style="display:inline;">
+                        {% csrf_token %}
+                        <input type="hidden" name="role" value="ahod">
+                        <input type="hidden" name="sts" value="Approved">
+                        <button type="submit" class="btn btn-success btn-sm">Approve</button>
+                    </form>
+                    <form action="{% url 'ahod_action_od' i.id %}" method="POST" style="display:inline; margin-left:4px;">
+                        {% csrf_token %}
+                        <input type="hidden" name="role" value="ahod">
+                        <input type="hidden" name="sts" value="Rejected">
+                        <button type="submit" class="btn btn-danger btn-sm">Reject</button>
+                    </form>
+                {% elif duser and duser.position == 0 and i.Hstatus == 'Pending' %}
+                    <form action="{% url 'ahod_action_od' i.id %}" method="POST" style="display:inline;">
+                        {% csrf_token %}
+                        <input type="hidden" name="role" value="hod">
+                        <input type="hidden" name="sts" value="Approved">
+                        <button type="submit" class="btn btn-success btn-sm">Approve</button>
+                    </form>
+                    <form action="{% url 'ahod_action_od' i.id %}" method="POST" style="display:inline; margin-left:4px;">
+                        {% csrf_token %}
+                        <input type="hidden" name="role" value="hod">
+                        <input type="hidden" name="sts" value="Rejected">
+                        <button type="submit" class="btn btn-danger btn-sm">Reject</button>
+                    </form>
+                {% else %}
+                    {% if i.Mstatus == 'Approved' %}
+                        <span class="badge badge-success">Approved by Mentor</span>
+                    {% elif i.Mstatus == 'Rejected' %}
+                        <span class="badge badge-danger">Rejected by Mentor</span>
+                    {% elif i.Astatus == 'Approved' %}
+                        <span class="badge badge-success">Approved by Advisor</span>
+                    {% elif i.Astatus == 'Rejected' %}
+                        <span class="badge badge-danger">Rejected by Advisor</span>
+                    {% elif i.AHstatus == 'Approved' %}
+                        <span class="badge badge-success">Approved by AHOD</span>
+                    {% elif i.AHstatus == 'Rejected' %}
+                        <span class="badge badge-danger">Rejected by AHOD</span>
+                    {% elif i.Hstatus == 'Approved' %}
+                        <span class="badge badge-success">Approved by HOD</span>
+                    {% elif i.Hstatus == 'Rejected' %}
+                        <span class="badge badge-danger">Rejected by HOD</span>
+                    {% else %}
+                        <small>No action available</small>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    {% endfor %}
+    {% if mods|length == 0 %}
+        <div class="od-row"><div style="grid-column:1/-1;text-align:center;padding:16px;">No mentee ODs found</div></div>
+    {% endif %}
+</div>
+
+<!-- Dept ODs -->
+<div class="od-table">
+    <div class="od-table-header">
+        <span class="header-title">Dept OD's</span>
+    </div>
+    <hr class="od-divider">
+    <div class="od-header">
+        <div>ID</div>
+        <div>NAME</div>
+            <div>SUB</div>
+        <div>FROM - TO</div>
+         <div>SUBMITTED AT</div>
+        <div>STATUS</div>
+        <div>ACTION</div>
+    </div>
+    {% for i in hods %}
+        {% if not request.GET.year or i.user.year|stringformat:'s' == request.GET.year %}
+        <div class="od-row">
+            <div class="od-id" data-label="ID">#OD{{ i.id }}</div>
+            <div class="od-title" data-label="NAME" title="{{ i.user.name }}">{{ i.user.name }}</div>
+                <div data-label="SUB">{{ i.sub }}</div>
+            <div data-label="FROM-TO">{{ i.start }}<br>{{ i.end }}</div>
+               <div data-label="Submitted At">{{ i.created|date:"d M Y, h:i A" }}</div>
+            <div data-label="STATUS">
+                <div class="status-grid">
+                    <div class="status-label">Mentor:</div>
+                    <span class="badge badge-{{ i.Mstatus }}">{{ i.Mstatus }}</span>
+                    <div class="status-label">Advisor:</div>
+                    <span class="badge badge-{{ i.Astatus }}">{{ i.Astatus }}</span>
+                    <div class="status-label">AHOD:</div>
+                    <span class="badge badge-{{ i.AHstatus }}">{{ i.AHstatus }}</span>
+                    <div class="status-label">HOD:</div>
+                    <span class="badge badge-{{ i.Hstatus }}">{{ i.Hstatus }}</span>
+                </div>
+            </div>
+            <div class="od-actions" data-label="ACTION">
+                    <button type="button" class="file-upload-label" data-toggle="modal" data-target="#detail{{i.id}}"><small>VIEW</small></button>
+                    {% if i.certificate %}
+                    <button type="button" class="btn-upload" data-toggle="modal" data-target="#certModal{{i.id}}">View Certificate</button>
+                    {% endif %}
+                {% if i.Hstatus == "Pending" %}
+                    {% if i.AHstatus == "Approved" %}
+                        <span class="badge badge-success">Approved</span>
+                    {% elif i.AHstatus == "Rejected" %}
+                        <span class="badge badge-danger">Rejected</span>
+                    {% else %}
+                        <form action="{% url 'ahod_action_od' i.id %}" method="POST" onsubmit="return handleAHODHODSelect(this)">
+                            {% csrf_token %}
+                            <div class="input-group mb-2">
+                                <select name="sts" class="form-control" onchange="toggleAHODHODReason(this, '{{i.id}}')">
+                                    <option value="Approved">Approve</option>
+                                    <option value="Rejected">Reject</option>
+                                    <option value="Approved_AHOD_HOD" selected>Approve (AHOD &amp; HOD)</option>
+                                    <option value="Rejected_AHOD_HOD">Reject (AHOD &amp; HOD)</option>
+                                </select>
+                                <button type="submit" class="btn btn-success">submit</button>
+                            </div>
+                            <div class="input-group mb-2" style="display:none;" id="ahod_hod_reason_{{i.id}}">
+                                <input type="text" name="ahod_hod_reason" class="form-control" placeholder="Reason for taking HOD decision (required)">
+                            </div>
+                        </form>
+                        <script>
+                        function toggleAHODHODReason(selectElem, id) {
+                            var reasonDiv = document.getElementById('ahod_hod_reason_' + id);
+                            if (selectElem.value === 'Approved_AHOD_HOD' || selectElem.value === 'Rejected_AHOD_HOD') {
+                                reasonDiv.style.display = '';
+                                reasonDiv.querySelector('input').setAttribute('required', 'required');
+                            } else {
+                                reasonDiv.style.display = 'none';
+                                reasonDiv.querySelector('input').removeAttribute('required');
+                            }
+                        }
+                        function handleAHODHODSelect(form) {
+                            var select = form.querySelector('select[name="sts"]');
+                            var reasonInput = form.querySelector('input[name="ahod_hod_reason"]');
+                            if ((select.value === 'Approved_AHOD_HOD' || select.value === 'Rejected_AHOD_HOD') && (!reasonInput.value || reasonInput.value.trim() === '')) {
+                                alert('Please provide a reason for taking HOD decision.');
+                                reasonInput.focus();
+                                return false;
+                            }
+                            return true;
+                        }
+                        </script>
+                    {% endif %}
+                {% elif i.Hstatus == 'Rejected' %}
+                    <p><small>Rejected by HOD</small></p>
+                {% elif i.Mstatus == 'Rejected' %}
+                    <p><small>Rejected by mentor</small></p>
+                {% elif i.Astatus == 'Rejected' %}
+                    <p><small>Rejected by advisor</small></p>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    {% endfor %}
+    {% if hods|length == 0 %}
+        <div class="od-row"><div style="grid-column:1/-1;text-align:center;padding:16px;">No department ODs found</div></div>
+    {% endif %}
+</div>
+
+<!-- Per-row modals: render the same modals the original template used so buttons work -->
+{% for od in mods %}
+    <div class="modal fade" id="certModal{{od.id}}" tabindex="-1" role="dialog" aria-labelledby="certModalLabel{{od.id}}" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="certModalLabel{{od.id}}">OD Certificate Preview</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body text-center">
+                    {% if od.certificate %}
+                        {% if ".pdf" in od.certificate.url|lower %}
+                            <embed src="{{od.certificate.url}}" type="application/pdf" width="100%" height="500px" />
+                        {% else %}
+                            <img src="{{od.certificate.url}}" alt="Certificate" style="max-width:100%; max-height:500px;" />
+                        {% endif %}
+                    {% else %}
+                        <p class="text-muted">No certificate uploaded</p>
+                    {% endif %}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="detail{{od.id}}" tabindex="-1" role="dialog" aria-labelledby="detailLabel{{od.id}}" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="detailLabel{{od.id}}">OD Details for {{od.user.name}}</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="submitted-time">
+                        <div class="od-detail-item" style="border: none; padding: 0;">
+                            <span class="od-detail-label">
+                                <i class="fa fa-clock-o"></i> Submitted At:
+                            </span>
+                            <span class="od-detail-value">{{od.created|date:"d M Y, h:i A"}}</span>
+                        </div>
+                    </div>
+                    <div class="od-detail-item">
+                        <span class="od-detail-label">Subject:</span>
+                        <span class="od-detail-value">{{od.sub}}</span>
+                    </div>
+                    <div class="od-detail-item">
+                        <span class="od-detail-label">Reason:</span>
+                        <span class="od-detail-value">{{od.body}}</span>
+                    </div>
+                    {% if od.proof %}
+                    <div class="od-detail-item" style="border: none;">
+                        <span class="od-detail-label">Proof:</span>
+                        <span class="od-detail-value">
+                            <a href="{{od.proof.url}}" target="_blank" class="btn btn-primary btn-sm">View Uploaded File</a>
+                        </span>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endfor %}
+
+{% for od in hods %}
+    <div class="modal fade" id="certModal{{od.id}}" tabindex="-1" role="dialog" aria-labelledby="certModalLabel{{od.id}}" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="certModalLabel{{od.id}}">OD Certificate Preview</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body text-center">
+                    {% if od.certificate %}
+                        {% if ".pdf" in od.certificate.url|lower %}
+                            <embed src="{{od.certificate.url}}" type="application/pdf" width="100%" height="500px" />
+                        {% else %}
+                            <img src="{{od.certificate.url}}" alt="Certificate" style="max-width:100%; max-height:500px;" />
+                        {% endif %}
+                    {% else %}
+                        <p class="text-muted">No certificate uploaded</p>
+                    {% endif %}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="detail{{od.id}}" tabindex="-1" role="dialog" aria-labelledby="detailLabel{{od.id}}" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="detailLabel{{od.id}}">OD Details for {{od.user.name}}</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="submitted-time">
+                        <div class="od-detail-item" style="border: none; padding: 0;">
+                            <span class="od-detail-label">
+                                <i class="fa fa-clock-o"></i> Submitted At:
+                            </span>
+                            <span class="od-detail-value">{{od.created|date:"d M Y, h:i A"}}</span>
+                        </div>
+                    </div>
+                    <div class="od-detail-item">
+                        <span class="od-detail-label">Subject:</span>
+                        <span class="od-detail-value">{{od.sub}}</span>
+                    </div>
+                    <div class="od-detail-item">
+                        <span class="od-detail-label">Reason:</span>
+                        <span class="od-detail-value">{{od.body}}</span>
+                    </div>
+                    {% if od.proof %}
+                    <div class="od-detail-item" style="border: none;">
+                        <span class="od-detail-label">Proof:</span>
+                        <span class="od-detail-value">
+                            <a href="{{od.proof.url}}" target="_blank" class="btn btn-primary btn-sm">View Uploaded File</a>
+                        </span>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endfor %}
+
+{% endblock %}

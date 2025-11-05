@@ -744,67 +744,53 @@ def ahod_bonafide_hod(request):
     # Get HODs in the same department as AHOD
     hods = HOD.objects.filter(department=ahod.department) if ahod else HOD.objects.none()
     hod_staff_ids = [h.user.id for h in hods]
-    # Get bonafide requests assigned to HODs in this department, pending HOD action
+    # Department-level bonafide forms (HOD table)
     bonafide_forms = BONAFIDE.objects.filter(user__hod_id__in=hod_staff_ids).distinct()
-    # Only show requests where the mentor is the current AHOD (not HODs as mentor)
+    # Mentee bonafide forms (AHOD as mentor)
     mentee_bonafide_forms = BONAFIDE.objects.filter(user__mentor_id=context['duser'].id).distinct()
     context['bonafide_forms'] = bonafide_forms
     context['mentee_bonafide_forms'] = mentee_bonafide_forms
+
     if request.method == 'POST':
         bonafide_id = request.POST.get('bonafide_id')
         action = request.POST.get('action') or request.POST.get('sts')
         reason = request.POST.get('reason')
         role = request.POST.get('role')
         bonafide = BONAFIDE.objects.get(id=bonafide_id)
-        if role == 'mentor':
+        mentor = getattr(bonafide.user, 'mentor', None)
+        is_actual_mentor = mentor is not None and mentor.id == context['duser'].id
+        # AHOD acting as mentor (Mentee table)
+        if role == 'mentor' and is_actual_mentor:
             if action == 'Approved':
                 bonafide.Mstatus = 'Approved by AHOD'
             elif action == 'Rejected':
                 bonafide.Mstatus = 'Rejected by AHOD'
+                bonafide.Astatus = 'Rejected by AHOD'
+                bonafide.Hstatus = 'Rejected by AHOD'
             bonafide.ahod_reason = reason
-            # Do NOT update Hstatus here!
             bonafide.save()
             Notification.objects.create(
                 student=bonafide.user,
                 message=f"Your Bonafide request was {bonafide.Mstatus} (Reason: {reason})"
             )
-        else:
-            if action == 'approve':
+        # AHOD acting as HOD (Department table), only if HOD has not acted
+        elif role == 'hod' and bonafide.Hstatus == 'Pending':
+            if action == 'Approved':
                 bonafide.Hstatus = 'Approved by AHOD'
-            elif action == 'reject':
-                # If AHOD rejects for HOD role, reject all statuses and notify all
+            elif action == 'Rejected':
                 bonafide.Hstatus = 'Rejected by AHOD'
                 bonafide.Mstatus = 'Rejected by AHOD'
                 bonafide.Astatus = 'Rejected by AHOD'
-                bonafide.ahod_reason = reason
-                bonafide.save()
-                # Notify student
-                Notification.objects.create(
-                    student=bonafide.user,
-                    message=f"Your Bonafide request was {bonafide.Hstatus} (Reason: {reason})"
-                )
-                # Notify mentor if exists
-                if bonafide.user.mentor:
-                    Notification.objects.create(
-                        staff=bonafide.user.mentor,
-                        role='mentor',
-                        message=f"Bonafide request for {bonafide.user.name} was rejected by AHOD."
-                    )
-                # Notify advisor if exists
-                if bonafide.user.advisor:
-                    Notification.objects.create(
-                        staff=bonafide.user.advisor,
-                        role='advisor',
-                        message=f"Bonafide request for {bonafide.user.name} was rejected by AHOD."
-                    )
-                return redirect('ahod_bonafide_hod')
             bonafide.ahod_reason = reason
             bonafide.save()
             Notification.objects.create(
                 student=bonafide.user,
                 message=f"Your Bonafide request was {bonafide.Hstatus} (Reason: {reason})"
             )
+        else:
+            messages.error(request, "You are not authorized to perform this action or HOD has already acted.")
         return redirect('ahod_bonafide_hod')
+
     return render(request, 'ahod/bonafide_hod.html', context)
 
 # AHOD Gatepass (HOD) requests view

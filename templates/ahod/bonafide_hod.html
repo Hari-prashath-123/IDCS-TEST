@@ -274,14 +274,18 @@
                                 </div>
                                 <div data-label="ACTION">
                                     {% if b.Hstatus == 'Pending' %}
-                                        <form method="post" action="{% url 'ahod_bonafide_hod' %}" style="display:flex;flex-direction:column;gap:8px;">{% csrf_token %}
-                                            <input type="hidden" name="bonafide_id" value="{{ b.id }}">
-                                            <div class="form-group mb-1"><textarea name="reason" class="form-control" placeholder="Reason for HOD action (required)" required>{{ b.ahod_reason }}</textarea></div>
-                                            <div style="display:flex; align-items:center; gap:8px;">
-                                                <button type="submit" name="action" value="approve_hod" class="btn btn-success btn-sm">Approve (HOD)</button>
-                                                <button type="submit" name="action" value="reject_hod" class="btn btn-danger btn-sm">Reject (HOD)</button>
-                                            </div>
-                                        </form>
+                                        {# Only show HOD action buttons if user is AHOD (not HOD), and HOD has not acted #}
+                                        {% if request.user.is_staff and request.user.staff.position2 == 1 %}
+                                            <form method="post" action="{% url 'ahod_bonafide_hod' %}" style="display:flex;flex-direction:column;gap:8px;">{% csrf_token %}
+                                                <input type="hidden" name="bonafide_id" value="{{ b.id }}">
+                                                <input type="hidden" name="role" value="hod">
+                                                <div class="form-group mb-1"><textarea name="reason" class="form-control" placeholder="Reason for HOD action (required)" required>{{ b.ahod_reason }}</textarea></div>
+                                                <div style="display:flex; align-items:center; gap:8px;">
+                                                    <button type="submit" name="action" value="Approved" class="btn btn-success btn-sm">Approve (HOD)</button>
+                                                    <button type="submit" name="action" value="Rejected" class="btn btn-danger btn-sm">Reject (HOD)</button>
+                                                </div>
+                                            </form>
+                                        {% endif %}
                                     {% elif b.Hstatus == 'Approved by AHOD' %}
                                         <span class="badge badge-Approved">Approved</span>
                                     {% elif b.Hstatus == 'Rejected by AHOD' %}
